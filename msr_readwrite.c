@@ -25,13 +25,6 @@
 #include <linux/kernel.h>
 #include <linux/module.h>
 
-enum MsrOperation {
-    MSR_READ  = 1,
-    MSR_WRITE = 2,
-    MSR_STOP  = 3,
-    MSR_RDTSC = 4
-};
-
 struct msr_readwrite_struct {
     unsigned int ecx;             // msr identifier
     union {
@@ -42,6 +35,11 @@ struct msr_readwrite_struct {
         unsigned long long value; // quad word
     };
 };
+
+#define MSR_MAGIC 4242
+#define MSR_WRITEVAL    _IOW (MSR_MAGIC, 1, struct msr_readwrite_struct)
+#define MSR_READVAL     _IOR (MSR_MAGIC, 2, int)
+#define MSR_READTSC     _IOR (MSR_MAGIC, 3, int)
 
 static long long msr_readwrite_read(unsigned int ecx) {
     unsigned int edx = 0, eax = 0;
@@ -77,15 +75,15 @@ static long msr_readwrite_ioctl(struct file *filp, unsigned int cmd, unsigned lo
     /* copy_from_user and copy_to_user are missing... I am the worst right? :D */
     
     switch (cmd) {
-    case MSR_READ:
+    case MSR_READVAL:
         pr_info("Saw read command...\n");
         msrops->value = msr_readwrite_read(msrops->ecx);
         break;
-    case MSR_WRITE:
+    case MSR_WRITEVAL:
         pr_info("Saw write command...\n");
         msr_readwrite_write(msrops->ecx, msrops->eax, msrops->edx);
         break;
-    case MSR_RDTSC:
+    case MSR_READTSC:
         pr_info("Saw read_tsc request\n");
         msrops->value = msr_readwrite_read_tsc();
         break;
